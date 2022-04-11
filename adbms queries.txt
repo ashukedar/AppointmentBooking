@@ -1,0 +1,67 @@
+/* DDL */
+CREATE TABLE patients(
+	patientID INT AUTO_INCREMENT PRIMARY KEY, 
+	patientName varchar(50) NOT NULL,
+	age int,
+	gender varchar(20),
+	address varchar(100), 
+	phoneNumber varchar(20), 
+	CHECK (
+		gender in (
+			'Male', 
+			'Female', 
+			'Other'
+		)
+	)
+);
+
+CREATE TABLE doctors(
+	doctorID int AUTO_INCREMENT PRIMARY KEY, 
+	doctorName varchar (50) NOT NULL, 
+	phoneNumber varchar(20),
+	specialization varchar(20), 
+	shiftStartTime time, 
+	shiftEndTime time, 
+	salary numeric(7,2), 
+	fee numeric(5,2)
+);
+
+CREATE TABLE appointments(
+	doctorID int, 
+	patientID int, 
+	appointmenttime datetime, 
+	appointmentUpdatedCount int,
+	FOREIGN KEY (doctorID) REFERENCES doctors(doctorID),
+	FOREIGN KEY (patientID) REFERENCES patients(patientId)
+);
+
+/* Views */
+CREATE VIEW doctorAppointments AS
+SELECT doctorID, patientID, appointmenttime
+FROM appointments;
+
+commit;
+
+/* Authorization */
+CREATE USER 'doctorDbUser'@'localhost' identified by 'Doctor@456';
+CREATE USER 'patientDbUser'@'localhost' identified by 'Patient@123';
+
+GRANT SELECT ON doctorappointments TO doctorDbUser;
+GRANT SELECT ON appointments TO patientDbUser;
+
+/* Trigger */
+DELIMITER $$  
+  
+CREATE TRIGGER before_update_appointmentUpdatedCount 
+BEFORE UPDATE  
+ON appointments FOR EACH ROW  
+BEGIN  
+    IF new.appointmentUpdatedCount > 3 THEN  
+    SIGNAL SQLSTATE '45000'   
+    SET MESSAGE_TEXT = 'The appointment cannot be updated more than 3 times';  
+    END IF;  
+END $$  
+  
+DELIMITER ; 
+
+commit;
